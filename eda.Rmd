@@ -1,0 +1,99 @@
+---
+title: "EDA for flights data"
+author: "Alexander Kolupaev"
+date: "11/04/2017"
+output: html_document
+---
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+lapply(list("dplyr", "rvest", "stringr", "xlsx", "readxl","seleniumPipes",
+            "regexPipes", "gtools","readxl",'lubridate','ggplot2','alr3','gridExtra'), require, c = 1)
+setwd('/Users/Alex/Desktop/datavis')
+```
+
+### About
+The data set contains information flight delays and performance for domestic carriers in the United States. The year of 2016 is considered in the analysis. The data set can be accessed from [RITA](https://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp).
+
+I will only focus on the 4 biggest airlines with combined market share of about [70%](https://www.statista.com/statistics/250577/domestic-market-share-of-leading-us-airlines/). Those are:
+
+* Southwest
+* Delta
+* American
+* United
+
+
+### Load and Inspect
+First, load and inspect the data. There are 12217 observations and 22 variables:
+```{r include=TRUE, echo=FALSE}
+df <- read.csv('./655176550_12017_3428_airline_delay_causes.csv', header = TRUE)
+str(df)
+```
+
+## Reshaping
+
+I am only interested in 4 airlines. Moreover, I only want to look at delays due
+to the carrier. Therefore I only leave variables and airlines of interest.
+Variables include:
+
+* total flights (arr_flights)
+* flights delayed (arr_del15)
+* total minutes delayed (arr_delay)
+* total minutes delayed because of carrier (carrier_delay)
+
+```{r include=TRUE, echo=FALSE}
+df <- subset(df, select = c('year','arr_del15','arr_flights','X.month','carrier','X.arr_delay',
+                            'X.carrier_delay'))
+colnames(df)[4] <- 'month'
+colnames(df)[6] <- 'arr_delay'
+colnames(df)[7] <- 'carrier_delay'
+
+df <- subset(df, df$carrier %in% c('AA','DL', 'WN', 'UA'))
+df <- df[complete.cases(df),]
+df$date <- as.Date(paste(df$year, df$month, 1, sep='-'), format="%Y-%m-%d")
+df$carrier <- as.factor(as.character(df$carrier))
+
+table(df$month)
+str(df)
+table(df$carrier)
+df$month <- as.integer(df$month)
+str(df)
+
+```
+
+### Summarise
+I group by month and carrier and calculate two ratios:
+
+* ratio of flights delayed
+* share of delay because of carrier 
+
+```{r include=TRUE, echo=FALSE}
+
+groups <- group_by(df, month, carrier)
+df1 <- summarise(groups,  delayed_flight_share = sum(arr_del15) / sum(arr_flights),
+                 carrier_share_min = sum(carrier_delay) / sum(arr_delay))
+
+df1 <- df1 %>% arrange(carrier)
+df1$date <- as.Date(paste(2016, df1$month, 1, sep='-'), format="%Y-%m-%d")
+
+```
+
+### Plotting
+**we see that July sucks for delays, but its not carriers' fault**
+delta airlines even works harder to prevent delays: hence the lower 
+spike in delayed flights for them.
+
+```{r include=TRUE, echo=FALSE}
+ggplot(data = df1,
+       aes(x = month, y = delayed_flight_share)) +
+  geom_line(aes(color = carrier)) + scale_x_continuous(limits=c(1,12), 
+                                                       breaks=seq(1,12,1))+
+  ggtitle ('share of flights delayed')
+
+ggplot(data = df1,
+       aes(x = month, y = carrier_share_min)) +
+  geom_line(aes(color = carrier)) + scale_x_continuous(limits=c(1,12), 
+                                                       breaks=seq(1,12,1))+
+  ggtitle ('share of minutes delayed due to the carrier')
+
+```
+
