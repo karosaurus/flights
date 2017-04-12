@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+    <style>
+      h2 {
+        color: black;
+        text-align: center;
+      }
+    </style>
+
+    <script type="text/javascript">
+
+      function draw(data) {
+      
+      d3.select('body')
+          .append('h2')
+          .attr('id', 'title')
+          .text('Flight delays at US Major Airlines in 2016');
+          
+      /*
+        D3.js setup code
+      */
+
+          "use strict";
+          var margin = 0,
+              width = 1200 - margin,
+              height = 650 - margin;
+         // d3.select('body')
+          //  .append('h2')
+           // .text("World Cup Attendance");
+          var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", width)
+                        .attr("height", height)
+                        .append('g')
+                        .attr('class','chart');
+
+          var myChart = new dimple.chart(svg, data);
+          var x = myChart.addTimeAxis("x", "date"); 
+          x.tickFormat = '%B';
+          x.title = 'month';
+
+          var y = myChart.addMeasureAxis("y", "delayed flights");
+          y.title = 'delayed';
+          y.tickFormat = ',.1%';
+          y.overrideMin = 0.05;
+          y.overrideMax = 0.3;
+          var z = myChart.addMeasureAxis("z", "delay time due to carrier");
+          z.tickFormat = ',.1%';
+          myChart.addLegend(750, 75, 330, 20, "right");
+          myChart.addSeries('carrier', dimple.plot.line);
+          myChart.addSeries('carrier', dimple.plot.scatter);
+          myChart.addSeries("carrier", dimple.plot.bubble);
+          z.overrideMax = 1.5;
+          myChart.draw();
+          svg.append("text")
+            .attr("x", 130)             
+            .attr("y",580)
+            .attr("text-anchor", "left")  
+            .style("font-size", "16px") 
+            .style("text-decoration", "underline")  
+            .text('*Bubble size indicates the share of delay due to the carrier');
+
+          
+        };
+      </script>
+  </head>
+
+<body>
+  <script type="text/javascript">
+    /*
+     * Use D3 to load CSV file and use `draw` callback
+     */
+    var format = d3.time.format("%Y-%m-%d");
+
+    d3.csv("data.csv", function(d) {
+        d['date']=  format.parse(d['date']);
+        d['carrier']= d['carrier_name'];
+        d['delayed flights'] = +d['delayed_flight_share'];
+        d['delay time due to carrier'] = +d['carrier_share_min'];
+        return d;
+      },draw);
+  </script>
+</body>
+</html>
