@@ -90,9 +90,9 @@ df1 <- df1 %>% arrange(date)
 ```
 
 ### Plotting
-**we see that July sucks for delays, but its not carriers' fault**
-delta airlines even works harder to prevent delays: hence the lower 
-spike in delayed flights for them.
+**we see that July and December have a lot of delays, but its mostly not carriers' fault** - months correspond to peak holiday seasons.
+Delta airlines is pretty bad, being responsible for half of delayed time usually.
+But somehow they are lucky with weather and other factors, cause proportion of delayed flights is lower than with other carriers.
 
 ```{r include=TRUE, echo=FALSE}
 p1 <- ggplot(data = df1,
