@@ -41,23 +41,36 @@ Variables include:
 * total minutes delayed because of carrier (carrier_delay)
 
 ```{r include=TRUE, echo=FALSE}
+#select variables of interest
 df <- subset(df, select = c('year','arr_del15','arr_flights','X.month','carrier','X.arr_delay',
-                            'X.carrier_delay'))
-colnames(df)[4] <- 'month'
-colnames(df)[6] <- 'arr_delay'
-colnames(df)[7] <- 'carrier_delay'
+                            'X.carrier_delay', 'carrier_name'))
+#rename columns
+newnames = list('year','delayed','arrivals','month',
+                'carrier','delay','delay_car','carrier_name')
+colnames(df) <- newnames
 
+#select carriers of interest
 df <- subset(df, df$carrier %in% c('AA','DL', 'WN', 'UA'))
+#omit NAs
 df <- df[complete.cases(df),]
+#create date variable
 df$date <- as.Date(paste(df$year, df$month, 1, sep='-'), format="%Y-%m-%d")
+#to get rid of empty factors
 df$carrier <- as.factor(as.character(df$carrier))
 
+str(df)
 table(df$month)
-str(df)
 table(df$carrier)
-df$month <- as.integer(df$month)
-str(df)
 
+#create a date variable, convert month numbers into month names, ordered.
+df$month <- as.integer(df$month)
+df$date <- as.Date(paste(2016, df$month, 1, sep='-'), format="%Y-%m-%d")
+mymonths <- c("Jan","Feb","Mar",
+              "Apr","May","Jun",
+              "Jul","Aug","Sep",
+              "Oct","Nov","Dec")
+df$month <- as.factor(mymonths[df$month])
+df$month <- ordered(df$month, levels = mymonths)
 ```
 
 ### Summarise
@@ -68,12 +81,11 @@ I group by month and carrier and calculate two ratios:
 
 ```{r include=TRUE, echo=FALSE}
 
-groups <- group_by(df, month, carrier)
-df1 <- summarise(groups,  delayed_flight_share = sum(arr_del15) / sum(arr_flights),
-                 carrier_share_min = sum(carrier_delay) / sum(arr_delay))
+groups <- group_by(df,date, carrier_name)
+df1 <- summarise(groups, delayed_flight_share = sum(delayed) / sum(arrivals), carrier_share_min = sum(delay_car) / sum(delay)) %>% ungroup()
 
-df1 <- df1 %>% arrange(carrier)
-df1$date <- as.Date(paste(2016, df1$month, 1, sep='-'), format="%Y-%m-%d")
+df1 <- df1 %>% arrange(date)
+
 
 ```
 
@@ -83,17 +95,20 @@ delta airlines even works harder to prevent delays: hence the lower
 spike in delayed flights for them.
 
 ```{r include=TRUE, echo=FALSE}
-ggplot(data = df1,
-       aes(x = month, y = delayed_flight_share)) +
-  geom_line(aes(color = carrier)) + scale_x_continuous(limits=c(1,12), 
-                                                       breaks=seq(1,12,1))+
+p1 <- ggplot(data = df1,
+       aes(x = date, y = delayed_flight_share)) +
+  geom_line(aes(color = carrier_name)) + scale_x_date(date_breaks = '1 month', date_labels = mymonths)+
   ggtitle ('share of flights delayed')
 
-ggplot(data = df1,
-       aes(x = month, y = carrier_share_min)) +
-  geom_line(aes(color = carrier)) + scale_x_continuous(limits=c(1,12), 
-                                                       breaks=seq(1,12,1))+
+p2 <- ggplot(data = df1,
+       aes(x = date, y = carrier_share_min)) +
+  geom_line(aes(color = carrier_name)) + scale_x_date(date_breaks = '1 month', date_labels = mymonths)+
   ggtitle ('share of minutes delayed due to the carrier')
 
+grid.arrange(p1, p2, ncol=1)
+```
+### Save dataframe
+```{r}
+write.csv(df1, file="data.csv", row.names=FALSE)
 ```
 
