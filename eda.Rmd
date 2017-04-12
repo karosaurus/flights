@@ -10,7 +10,6 @@ lapply(list("dplyr", "rvest", "stringr", "xlsx", "readxl","seleniumPipes",
             "regexPipes", "gtools","readxl",'lubridate','ggplot2','alr3','gridExtra'), require, c = 1)
 setwd('/Users/Alex/Desktop/datavis')
 ```
-
 ### About
 The data set contains information flight delays and performance for domestic carriers in the United States. The year of 2016 is considered in the analysis. The data set can be accessed from [RITA](https://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp).
 
@@ -29,7 +28,7 @@ df <- read.csv('./655176550_12017_3428_airline_delay_causes.csv', header = TRUE)
 str(df)
 ```
 
-## Reshaping
+### Reshaping
 
 I am only interested in 4 airlines. Moreover, I only want to look at delays due
 to the carrier. Therefore I only leave variables and airlines of interest.
